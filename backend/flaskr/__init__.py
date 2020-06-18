@@ -16,10 +16,18 @@ def create_app(test_config=None):
   '''
   @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
-
+  CORS(app, resources={r'/*': {'origins': '*'}})
   '''
   @TODO: Use the after_request decorator to set Access-Control-Allow
   '''
+  @app.after_request
+  def set_headers(response):
+      
+      response.headers.add('Access-Control-Allow-Headers',
+                            'Content-Type, Authorization, true')
+      response.headers.add('Access-Control-Allow-Methods',
+                            'GET, PATCH, POST, DELETE, OPTIONS')
+      return response
 
   '''
   @TODO: 
@@ -27,17 +35,16 @@ def create_app(test_config=None):
   for all available categories.
   '''
 
-  @app.route('/categories')
+  @app.route('/categories' , methods=['GET'])
   def retrieve_categories():
       
-      categories = list(map(Category.format, Category.query.all()))
-
-      result = {
-          'success': True,
-          'categories': categories
-      }
-
-      return jsonify(result)
+    categories = Category.query.all()
+    formatted_categories = {category.id: category.type for category in categories}
+    return jsonify({
+        'success': True,
+        'categories': formatted_categories,
+    })
+      
 
   '''
   @TODO: 
@@ -54,17 +61,25 @@ def create_app(test_config=None):
 
   @app.route('/questions')
   def retrieve_questions():
-      # Create a new list
-      # Map the elements from Category.format with the values provided by Category.query.all
-      # Return the jsonify
-      questions = list(map(Question.format, Question.query.all()))
-      
-      result = {
-          'success': True,
-          'questions': questions
-      }
 
-      return jsonify(result)
+    page = request.args.get('page', 1, type=int)
+    upper_limit = page*QUESTIONS_PER_PAGE
+    lower_limit = upper_limit - QUESTIONS_PER_PAGE
+
+    questions = Question.query.all()
+    formatted_questions = [question.format() for question in questions]
+    categories = Category.query.all()
+    formatted_categories = {category.id: category.type for category in categories}
+
+    result = {
+        'success': True,
+        'questions': formatted_questions[lower_limit :upper_limit],
+        'total_questions': len(formatted_questions),
+        'categories': formatted_categories,
+        'current_category': None
+    }
+
+    return jsonify(result)
 
   '''
   @TODO: 
@@ -76,20 +91,20 @@ def create_app(test_config=None):
 
   @app.route('/questions/<int:question_id>' , methods=['DELETE'] )
   def delete_question(question_id):
-      
-      return jsonify({
-        'success': True
-      })
-      
-      # question_query = Question.query.get(question_id)
-      
-      # if question_query:
-      #   Question.delete(question_query)
 
-      # else:
-      #   error(404)  
-
+    print(question_id)  
+    question_query = Question.query.get(question_id)
       
+    if question_query:
+      Question.delete(question_query)
+      result = {
+        'success': True,
+      }
+    else:
+      error(404)  
+      
+    return jsonify(result)
+
 
   '''
   @TODO: 
@@ -105,9 +120,26 @@ def create_app(test_config=None):
   @app.route('/questions', methods=["POST"])
   def add_question():
 
-    return jsonify({
-        'success': True
-    })
+    if request.data:
+      body = request.get_json()
+      question = body.get('question', None)
+      answer = body.get('answer', None)
+      category = body.get('category', None)
+      difficulty = body.get('difficulty', None)
+
+      if (question is None) or (answer is None) or (category is None) or (difficulty is None):
+        return abort(400, 'Required question object data missing from request')
+
+      try:
+        new_question = Question(question, answer, category, difficulty)
+        Question.insert(new_question)  
+      
+        return jsonify({
+          'success': True,
+          'question': new_question.format()
+        })
+      except:
+        return abort(400, 'Question object data missing from request')
 
   '''
   @TODO: 
@@ -121,9 +153,26 @@ def create_app(test_config=None):
   '''
   @app.route('/searchQuestions', methods=['POST'])
   def search_questions():
-    return jsonify({
-      'success': True
-    })
+
+    if request.data:
+      body = request.get_json()
+      searchTerm = body.get('searchTerm', None)
+      
+      if (searchTerm is None):
+        return abort(400, 'Search data missing from request')
+
+      try:
+        questions = Question.query.filter(
+                Question.question.ilike('%' + searchTerm + '%')).all()
+
+        formatted_questions = [question.format() for question in questions]
+
+        return jsonify({
+          'success': True,
+          'questions': formatted_questions
+        })
+      except:
+        return abort(400, 'Search data missing from request')
 
   '''
   @TODO: 
@@ -159,9 +208,45 @@ def create_app(test_config=None):
   '''
   @app.route("/quizzes", methods=['POST'])
   def get_question_for_quiz():
-    return jsonify({
-      'success': True
-    })
+    if request.data:
+
+      previous_questions = request.json.get('previous_questions')
+      quiz_category = request.json.get('quiz_category')
+
+      if not quiz_category:
+          return abort(400, 'Required quiz keys missing from request body')
+
+      category_id = int(quiz_category.get('id'))
+
+      questions_q = Question.query.filter_by(
+                category=category_id 
+            ).filter(
+                Question.id.notin_(previous_questions)
+            ).all()
+
+      print(questions_q)
+
+      length_question = len(questions_q)
+      if length_question > 0:
+          result = {
+              "success": True,
+              "question": Question.format(
+                  questions_q[random.randrange(
+                      0,
+                      length_question
+                  )]
+              )
+          }
+      else:
+        result = {
+            "success": True,
+            "question": None
+        }
+
+      return jsonify(result)
+
+    return abort(400, 'Quiz data missing from request')
+
 
   '''
   @TODO: 
