@@ -40,10 +40,17 @@ def create_app(test_config=None):
     # Create a list of categories
     categories = Category.query.all()
     formatted_categories = {category.id: category.type for category in categories}
-    return jsonify({
-        'success': True,
-        'categories': formatted_categories,
-    })
+
+    if len(formatted_categories):
+      return jsonify({
+          'success': True,
+          'categories': formatted_categories,
+      })
+    else:
+      return jsonify({
+          'success': False,
+          'message': 'Categories not found'
+      })  
       
 
   '''
@@ -71,6 +78,11 @@ def create_app(test_config=None):
     categories = Category.query.all()
     formatted_categories = {category.id: category.type for category in categories}
 
+    print(len(questions))
+
+    if len(formatted_questions[lower_limit :upper_limit]) == 0:
+      return abort(400, 'Questions not found')
+
     result = {
         'success': True,
         'questions': formatted_questions[lower_limit :upper_limit],
@@ -80,6 +92,7 @@ def create_app(test_config=None):
     }
 
     return jsonify(result)
+
 
   '''
   @TODO: 
@@ -140,7 +153,7 @@ def create_app(test_config=None):
           'question': new_question.format()
         })
       except:
-        return abort(400, 'Question object data missing from request')
+        return abort(400, 'Question data missing from request')
 
   '''
   @TODO: 
@@ -187,18 +200,24 @@ def create_app(test_config=None):
   @app.route('/categories/<int:category_id>/questions', methods=['GET'])
   def get_questions_with_category(category_id):
 
-    # Gets a question bases on a category
+    # Gets a question basesd on a category
     category_query = Category.query.get(category_id)
 
     question_query = Question.query.filter_by(category=str(category_id)).all()
-    
     questions = list(map(Question.format, question_query))
 
-    return jsonify({
-      'success': True,
-      'questions': questions
+    if len(questions) > 0:
+      return jsonify({
+          'success': True,
+          'questions': questions,
+          'category': Category.format(category_query),
+      })
+    else:
+      return jsonify({
+          "success": False,
+          "message": "Category not found"
+      })
 
-    })
 
   '''
   @TODO: 
@@ -236,7 +255,7 @@ def create_app(test_config=None):
                 Question.id.notin_(previous_questions)
             ).all()
 
-      print(questions_q)
+      #print(questions_q)
 
       length_question = len(questions_q)
       if length_question > 0:
@@ -251,7 +270,7 @@ def create_app(test_config=None):
           }
       else:
         result = {
-            "success": True,
+            "success": False,
             "question": None
         }
 

@@ -42,8 +42,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertTrue(data['categories'])
 
-
-    def test_retrieve_categories(self):
+    def test_retrieve_questions(self):
         res = self.client().get('/questions?page=1')
         data = json.loads(res.data)
 
@@ -51,15 +50,33 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertTrue(len(data["categories"]))
         self.assertTrue(len(data["questions"]))
-    
-    def test_delete_questions(self):
-        res = self.client().delete('/questions/6')
+
+
+    def test_retrieve_questions(self):
+        res = self.client().get('/questions?page=10000')
         data = json.loads(res.data)
-        question = Question.query.filter(Question.id == 6)
+
+        self.assertEqual(data["success"], False)
+        #self.assertTrue(data[message], 'Questions not found')    
+
+    def test_delete_questions(self):
+        res = self.client().delete('/questions/8')
+        data = json.loads(res.data)
+        question = Question.query.filter(Question.id == 8)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertTrue(question, None)
+
+
+    def test_delete_questions(self):
+        res = self.client().delete('/questions/10000')
+        data = json.loads(res.data)
+        question = Question.query.filter(Question.id == 10000)
+
+        self.assertEqual(data['success'], False)
+        self.assertTrue(data['message'], "Question object data missing from request")
+
 
     def test_post_new_questions(self):
         post_data = {
@@ -72,12 +89,25 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(data['success'], True)
+        self.assertEqual(data['success'], True)    
+
+
+    def test_post_new_questions(self):
+        post_data = {
+            'question':'What is the capital of India?',
+            'difficulty': 2,
+            'category': 1
+        }
+        res = self.client().post('/questions', json=post_data)
+        data = json.loads(res.data)
+
+        self.assertEqual(data['success'], False)
+        self.assertTrue(data['message'], 'Question data missing from request')
 
 
     def test_post_search_questions(self):
         post_data = {
-            'searchTerm': 'a',
+            'searchTerm': 'a'
         }
         res = self.client().post('/searchQuestions', json=post_data)
         data = json.loads(res.data)
@@ -88,6 +118,17 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data["questions"]))
 
 
+    def test_post_search_questions(self):
+        post_data = {
+            'searchTerm1': '',
+        }
+        res = self.client().post('/searchQuestions', json=post_data)
+        data = json.loads(res.data)
+
+        self.assertEqual(data["success"], False)
+        self.assertTrue(data["message"], 'Search data missing from request')
+
+
     def test_get_questions_with_category(self):
         res = self.client().get('/categories/1/questions')
         data = json.loads(res.data)
@@ -95,16 +136,15 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
         self.assertTrue(data['questions'])
         self.assertTrue(data['category'])
-        self.assertTrue(data['total_questions'])
+  
 
-    
     def test_get_questions_with_category(self):
-        res = self.client().get('/categories/10/questions')
+        res = self.client().get('/categories/1000/questions')
         data = json.loads(res.data)
-
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'],'Category not found')
-        
+
+
     def test_post_play_quiz(self):
         post_data = {
             'previous_questions':[],
@@ -113,12 +153,23 @@ class TriviaTestCase(unittest.TestCase):
                 'id': 1
             }
         }
-
         res = self.client().post('/quizzes', json=post_data)
         data = json.loads(res.data)
 
         self.assertEqual(data['success'], True)
         self.assertTrue(data['question'])
+
+
+    def test_post_play_quiz(self):
+        post_data = {
+            'previous_questions':[]
+        }
+        res = self.client().post('/quizzes', json=post_data)
+        data = json.loads(res.data)
+
+        self.assertEqual(data['success'], False)
+        self.assertTrue(data['message'], 'Required quiz keys missing from request body')
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
