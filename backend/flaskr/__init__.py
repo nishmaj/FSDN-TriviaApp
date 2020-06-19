@@ -102,7 +102,7 @@ def create_app(test_config=None):
         'deleted': question_id  
       }
     else:
-      error(404)  
+      return abort(400, 'Question object data missing from request')
       
     return jsonify(result)
 
@@ -197,7 +197,7 @@ def create_app(test_config=None):
     return jsonify({
       'success': True,
       'questions': questions
-      
+
     })
 
   '''
@@ -224,7 +224,13 @@ def create_app(test_config=None):
 
       category_id = int(quiz_category.get('id'))
 
-      questions_q = Question.query.filter_by(
+      # load questions all questions if "ALL" is selected
+      if (category_id == 0):
+          questions_q = Question.query.all()
+      # load questions for given category
+      else:
+
+        questions_q = Question.query.filter_by(
                 category=str(category_id)
             ).filter(
                 Question.id.notin_(previous_questions)
