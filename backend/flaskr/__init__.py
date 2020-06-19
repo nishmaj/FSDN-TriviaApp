@@ -37,7 +37,7 @@ def create_app(test_config=None):
 
   @app.route('/categories' , methods=['GET'])
   def retrieve_categories():
-      
+    # Create a list of categories
     categories = Category.query.all()
     formatted_categories = {category.id: category.type for category in categories}
     return jsonify({
@@ -61,7 +61,7 @@ def create_app(test_config=None):
 
   @app.route('/questions')
   def retrieve_questions():
-
+    # Create a list of questions using pagination
     page = request.args.get('page', 1, type=int)
     upper_limit = page*QUESTIONS_PER_PAGE
     lower_limit = upper_limit - QUESTIONS_PER_PAGE
@@ -91,14 +91,15 @@ def create_app(test_config=None):
 
   @app.route('/questions/<int:question_id>' , methods=['DELETE'] )
   def delete_question(question_id):
-
-    print(question_id)  
+    # Delete a question of given id
+      
     question_query = Question.query.get(question_id)
       
     if question_query:
       Question.delete(question_query)
       result = {
         'success': True,
+        'deleted': question_id  
       }
     else:
       error(404)  
@@ -119,7 +120,7 @@ def create_app(test_config=None):
 
   @app.route('/questions', methods=["POST"])
   def add_question():
-
+    # Adds a new question n the db
     if request.data:
       body = request.get_json()
       question = body.get('question', None)
@@ -153,7 +154,7 @@ def create_app(test_config=None):
   '''
   @app.route('/searchQuestions', methods=['POST'])
   def search_questions():
-
+    # Search thru questions using search criteria
     if request.data:
       body = request.get_json()
       searchTerm = body.get('searchTerm', None)
@@ -169,7 +170,8 @@ def create_app(test_config=None):
 
         return jsonify({
           'success': True,
-          'questions': formatted_questions
+          'questions': formatted_questions,
+          'total_questions': len(formatted_questions)
         })
       except:
         return abort(400, 'Search data missing from request')
@@ -184,6 +186,8 @@ def create_app(test_config=None):
   '''
   @app.route('/categories/<int:category_id>/questions', methods=['GET'])
   def get_questions_with_category(category_id):
+
+    # Gets a question bases on a category
     category_query = Category.query.get(category_id)
 
     question_query = Question.query.filter_by(category=str(category_id)).all()
@@ -193,6 +197,7 @@ def create_app(test_config=None):
     return jsonify({
       'success': True,
       'questions': questions
+      
     })
 
   '''
@@ -208,6 +213,7 @@ def create_app(test_config=None):
   '''
   @app.route("/quizzes", methods=['POST'])
   def get_question_for_quiz():
+
     if request.data:
 
       previous_questions = request.json.get('previous_questions')
@@ -219,7 +225,7 @@ def create_app(test_config=None):
       category_id = int(quiz_category.get('id'))
 
       questions_q = Question.query.filter_by(
-                category=category_id 
+                category=str(category_id)
             ).filter(
                 Question.id.notin_(previous_questions)
             ).all()
