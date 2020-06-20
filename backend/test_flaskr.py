@@ -42,7 +42,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertTrue(data['categories'])
 
-    def test_retrieve_questions(self):
+    def test_retrieve_questions_pagination(self):
         res = self.client().get('/questions?page=1')
         data = json.loads(res.data)
 
@@ -52,7 +52,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data["questions"]))
 
 
-    def test_retrieve_questions(self):
+    def test_retrieve_questions_fail(self):
         res = self.client().get('/questions?page=10000')
         data = json.loads(res.data)
 
@@ -60,16 +60,16 @@ class TriviaTestCase(unittest.TestCase):
         #self.assertTrue(data[message], 'Questions not found')    
 
     def test_delete_questions(self):
-        res = self.client().delete('/questions/8')
+        res = self.client().delete('/questions/10')
         data = json.loads(res.data)
-        question = Question.query.filter(Question.id == 8)
+        question = Question.query.filter(Question.id == 10)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertTrue(question, None)
 
 
-    def test_delete_questions(self):
+    def test_delete_questions_fail(self):
         res = self.client().delete('/questions/10000')
         data = json.loads(res.data)
         question = Question.query.filter(Question.id == 10000)
@@ -92,7 +92,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)    
 
 
-    def test_post_new_questions(self):
+    def test_post_new_questions_fail(self):
         post_data = {
             'question':'What is the capital of India?',
             'difficulty': 2,
@@ -118,7 +118,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data["questions"]))
 
 
-    def test_post_search_questions(self):
+    def test_post_search_questions_fail(self):
         post_data = {
             'searchTerm1': '',
         }
@@ -138,7 +138,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['category'])
   
 
-    def test_get_questions_with_category(self):
+    def test_get_questions_with_category_fail(self):
         res = self.client().get('/categories/1000/questions')
         data = json.loads(res.data)
         self.assertEqual(data['success'], False)
@@ -160,7 +160,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['question'])
 
 
-    def test_post_play_quiz(self):
+    def test_post_play_quiz_fail(self):
         post_data = {
             'previous_questions':[]
         }
